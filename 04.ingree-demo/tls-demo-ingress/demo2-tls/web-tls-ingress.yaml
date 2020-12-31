@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tls-ingress
+  namespace: web-demo
+
+spec:
+  tls:
+  - hosts:
+    - www.hujianli.cn
+    secretName: web-https
+
+
+  rules:
+  - host: www.hujianli.cn
+    http:
+      paths:
+      - path: /s1
+        backend:
+          serviceName: svc1
+          servicePort: 8080
+      - path: /s2
+        backend:
+          serviceName: svc2
+          servicePort: 8080
+      - path: /
+        backend:
+          serviceName: svc3
+          servicePort: 8080

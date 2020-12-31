@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s.kuboard.cn/layer: cloud
+    k8s.kuboard.cn/name: cloud-nginx-tls
+
+  name: nginx-tls
+  namespace: web-demo
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s.kuboard.cn/layer: cloud
+      k8s.kuboard.cn/name: cloud-nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s.kuboard.cn/layer: cloud
+        k8s.kuboard.cn/name: cloud-nginx
+    spec:
+      containers:
+        - image: nginx
+          imagePullPolicy: Always
+          name: nginx-tls
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    k8s.kuboard.cn/workload: cloud-nginx-tls
+  labels:
+    k8s.kuboard.cn/layer: cloud
+    k8s.kuboard.cn/name: cloud-nginx-tls
+  name: nginx-tls
+  namespace: web-demo
+
+spec:
+  ports:
+    - name: m84rkz
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    k8s.kuboard.cn/layer: cloud
+    k8s.kuboard.cn/name: nginx-tls
+  sessionAffinity: None
+  type: ClusterIP

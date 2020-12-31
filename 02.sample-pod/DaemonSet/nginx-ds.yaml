@@ -1,0 +1,270 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: Deployment-nginx-configuration
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tcp-services
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: udp-services
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: Deployment-nginx-ingress-serviceaccount
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: Deployment-nginx-ingress-clusterrole
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - endpoints
+      - nodes
+      - pods
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "extensions"
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - "extensions"
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: Deployment-nginx-ingress-role
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+      - secrets
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      # Defaults to "<election-id>-<ingress-class>"
+      # Here: "<ingress-controller-leader>-<Deployment-nginx>"
+      # This has to be adapted if you change either parameter
+      # when launching the Deployment-nginx-ingress-controller.
+      - "ingress-controller-leader-Deployment-nginx"
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - endpoints
+    verbs:
+      - get
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: Deployment-nginx-ingress-role-nisa-binding
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: Deployment-nginx-ingress-role
+subjects:
+  - kind: ServiceAccount
+    name: Deployment-nginx-ingress-serviceaccount
+    namespace: ingress-Deployment-nginx
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: Deployment-nginx-ingress-clusterrole-nisa-binding
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: Deployment-nginx-ingress-clusterrole
+subjects:
+  - kind: ServiceAccount
+    name: Deployment-nginx-ingress-serviceaccount
+    namespace: ingress-Deployment-nginx
+
+---
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: Deployment-nginx-ingress-controller
+  namespace: ingress-Deployment-nginx
+  labels:
+    app.kubernetes.io/name: ingress-Deployment-nginx
+    app.kubernetes.io/part-of: ingress-Deployment-nginx
+spec:
+  #replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-Deployment-nginx
+      app.kubernetes.io/part-of: ingress-Deployment-nginx
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-Deployment-nginx
+        app.kubernetes.io/part-of: ingress-Deployment-nginx
+      annotations:
+        prometheus.io/port: "10254"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: Deployment-nginx-ingress-serviceaccount
+      hostNetwork: true
+      containers:
+        - name: Deployment-nginx-ingress-controller
+          image: quay.io/kubernetes-ingress-controller/Deployment-nginx-ingress-controller:0.22.0
+          args:
+            - /Deployment-nginx-ingress-controller
+            - --configmap=$(POD_NAMESPACE)/Deployment-nginx-configuration
+            - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
+            - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
+            - --publish-service=$(POD_NAMESPACE)/ingress-Deployment-nginx
+            - --annotations-prefix=Deployment-nginx.ingress.kubernetes.io
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+            # www-data -> 33
+            runAsUser: 33
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+
+---

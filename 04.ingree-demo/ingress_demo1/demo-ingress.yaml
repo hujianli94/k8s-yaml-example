@@ -1,0 +1,27 @@
+# create ingree
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: qcloud #注释,不同的Ingress控制器支持不同的注释
+    kubernetes.io/ingress.http-rules: '[{"host":"demo.hu-uiapi123.com","path":"/api/demo1-tls","backend":{"serviceName":"apidemo1","servicePort":80}},{"host":"demo.hu-uiapi123.com","path":"/api/demo2","backend":{"serviceName":"apidemo2","servicePort":80}}]' #HTTP转发规则
+    kubernetes.io/ingress.https-rules: "null"
+    kubernetes.io/ingress.rule-mix: "true"
+  name: demo
+  namespace: demo-ingress-test01
+spec:
+  rules: #规则列表
+  - host: demo.hu-uiapi123.com #主机名，可选。如不填写，则使用IP地址。
+    http: #HTTP规则
+      paths: #路径列表
+      - backend: #后端配置
+          serviceName: apidemo1 #后端服务名称
+          servicePort: 80 #服务端口
+        path: /api/demo1-tls #路径，同一个域名路径需不同
+  - host: demo.hu-uiapi123.com #主机名，可选。如不填写，则使用IP地址。
+    http:
+      paths:
+      - backend:
+          serviceName: apidemo2 #后端服务名称
+          servicePort: 80 #服务端口
+        path: /api/demo2  #路径，同一个域名路径需不同

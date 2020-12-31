@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-centos6
+  labels:
+    os: centos
+  namespace: os
+spec:
+  containers:
+  - name: centos6
+    image: centos:6
+    env:
+    - name: Test
+      value: "123456"
+    command: ["bash","-c","while true;do date;sleep 1;done"]

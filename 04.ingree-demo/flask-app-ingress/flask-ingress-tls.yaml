@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: svc-flaskapp
+  namespace: web-demo
+  annotations:
+    kubernetes.io/ingress.class: "Deployment-nginx"
+spec:
+  tls:
+    - hosts:
+      - www.hujianli.cn
+      secretName: svc-flaskapp
+
+  rules:
+  - host: www.hujianli.cn
+    http:
+      paths:
+      - backend:
+          serviceName: svc-flaskapp
+          servicePort: 5000
+
+

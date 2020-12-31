@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd2
+spec:
+  containers:
+    - image: nginx:1.12
+      name: test-container
+      volumeMounts:
+        - mountPath: /data
+          name: test-volume
+  volumes:
+    - name: test-volume
+      hostPath:
+        path: /etc/default
+        type: Directory

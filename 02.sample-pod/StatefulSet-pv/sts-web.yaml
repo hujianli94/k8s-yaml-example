@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: Deployment-nginx
+  labels:
+    app: Deployment-nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: Deployment-nginx
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "Deployment-nginx"
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: Deployment-nginx
+    spec:
+      containers:
+      - name: Deployment-nginx
+        image: Deployment-nginx
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/Deployment-nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "Deployment-nginx-storage-class"
+      resources:
+        requests:
+          storage: 1Gi

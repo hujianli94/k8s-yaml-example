@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistenVolume
+metadata:
+  name: nfs-pv
+  labels:
+    type: nfs
+
+spec:
+  capacity:
+    storge: 5Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: nfs-server
+    path: /
